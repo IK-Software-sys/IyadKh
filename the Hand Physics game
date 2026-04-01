@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hand Physics Pro - Game Edition</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background: #050505; font-family: 'Segoe UI', sans-serif; position: fixed; width: 100%; height: 100%; }
+    canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+    #video { visibility: hidden; width: 0; height: 0; }
+    #ui-info { 
+        position: absolute; top: 15px; left: 15px; color: #00ffcc; z-index: 20; 
+        background: rgba(0,0,0,0.85); padding: 12px; border-radius: 8px; font-size: 11px;
+        border: 1px solid rgba(0,255,204,0.4); pointer-events: none;
+        backdrop-filter: blur(8px); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .score-display { color: #fff; font-size: 18px; margin-top: 5px; display: block; text-shadow: 0 0 10px #00ffcc; }
+  </style>
+</head>
+<body>
+
+  <div id="ui-info">
+    <b style="font-size: 13px; color: #fff;">PHYSICS LAB V2.1</b><br>
+    Status: <span id="status" style="color:#00ffcc">Syncing...</span><br>
+    <span class="score-display">HITS: <span id="score-val">0</span></span>
+    <hr style="border:0; border-top:1px solid rgba(0,255,204,0.2); margin: 8px 0;">
+    • FIST: Menu | PINCH: Throw<br>
+    • AIM: Hit the glowing targets!
+  </div>
+  
+  <video id="video" playsinline></video>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const videoElement = document.getElementById('video');
+    const canvasElement = document.getElementById('canvas');
+    const canvasCtx = canvasElement.getContext('2d');
+    
+    const { Engine, Bodies, Composite, Constraint, World, Body, Events } = Matter;
+    const engine = Engine.create();
+    const world = engine.world;
+    engine.gravity.y = 1.2;
+
+    // Game State
+    let score = 0;
+    let target = { x: 200, y: 200, r: 50, active: true };
+    let ballRadius = 35;
+    let ball = Bodies.circle(window.innerWidth / 2, 200, ballRadius, {
+      restitution: 0.7, friction: 0.005, density: 0.01,
+      render: { fillStyle: '#ff3e00' }
+    });
+
+    const wallOptions = { isStatic: true, friction: 0.1, restitution: 0.5 };
+    const setupWorld = () => {
+        Composite.clear(world);
+        Composite.add(world, [
+            ball,
+            Bodies.rectangle(window.innerWidth/2, window.innerHeight + 30, window.innerWidth, 60, wallOptions),
+            Bodies.rectangle(window.innerWidth/2, -30, window.innerWidth, 60, wallOptions),
+            Bodies.rectangle(-30, window.innerHeight/2, 60, window.innerHeight, wallOptions),
+            Bodies.rectangle(window.innerWidth + 30, window.innerHeight/2, 60, window.innerHeight, wallOptions)
+        ]);
+        spawnTarget();
+    };
+
+    function spawnTarget() {
+        target.x = 100 + Math.random() * (window.innerWidth - 200);
+        target.y = 100 + Math.random() * (window.innerHeight - 300);
+        target.active = true;
+    }
+
+    let grabConstraint = null;
+    let menuActive = false;
+    let fistDetected = false;
+    let isDraggingSlider = false;
+    let canToggleBtn = true; 
+    let depthFactor = 1.0;
+    let velocityBuffer = [];
+    let lastHandPos = { x: 0, y: 0 };
+
+    // Compact Menu Settings
+    const menuBaseX = window.innerWidth * 0.85;
+    const menuBaseY = window.innerHeight * 0.4;
+    const menuSpacing = 60; // Smaller spacing
+
+    function onResults(results) {
+      document.getElementById('status').innerText = "Link Stable";
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.translate(canvasElement.width, 0);
+      canvasCtx.scale(-1, 1);
+
+      // Target Rendering
+      if (target.active) {
+          canvasCtx.beginPath();
+          canvasCtx.arc(target.x, target.y, target.r, 0, Math.PI*2);
+          canvasCtx.strokeStyle = "#00ffcc";
+          canvasCtx.lineWidth = 3;
+          canvasCtx.setLineDash([5, 5]);
+          canvasCtx.stroke();
+          canvasCtx.setLineDash([]);
+          // Check Collision
+          const dist = Math.hypot(ball.position.x - target.x, ball.position.y - target.y);
+          if (dist < ballRadius + target.r) {
+              score++;
+              document.getElementById('score-val').innerText = score;
+              target.active = false;
+              setTimeout(spawnTarget, 1000);
+          }
+      }
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        const dScale = Math.hypot(landmarks[0].x - landmarks[5].x, landmarks[0].y - landmarks[5].y);
+        depthFactor = Math.max(0.6, Math.min(1.3, dScale / 0.16));
+
+        const currentlyFist = landmarks[8].y > landmarks[6].y && landmarks[12].y > landmarks[10].y;
+        if (currentlyFist && !fistDetected) { menuActive = !menuActive; fistDetected = true; }
+        else if (!currentlyFist) { fistDetected = false; }
+
+        const cx = landmarks[8].x * canvasElement.width;
+        const cy = landmarks[8].y * canvasElement.height;
+        const tx = landmarks[4].x * canvasElement.width;
+        const ty = landmarks[4].y * canvasElement.height;
+
+        velocityBuffer.push({ x: cx - lastHandPos.x, y: cy - lastHandPos.y });
+        if (velocityBuffer.length > 5) velocityBuffer.shift();
+        lastHandPos = { x: cx, y: cy };
+
+        const isPinching = Math.hypot(cx - tx, cy - ty) < (45 * depthFactor);
+        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00ffcc', lineWidth: 2});
+
+        if (isPinching) {
+            if (!grabConstraint && !isDraggingSlider) {
+                if (menuActive) {
+                    const gY = menuBaseY - menuSpacing;
+                    const rY = menuBaseY;
+                    const sY = menuBaseY + menuSpacing;
+
+                    if (Math.hypot(cx - menuBaseX, cy - gY) < 30) {
+                        if (canToggleBtn) { handleAction('gravity'); canToggleBtn = false; }
+                    } else if (Math.hypot(cx - menuBaseX, cy - rY) < 30) {
+                        if (canToggleBtn) { handleAction('reset'); canToggleBtn = false; }
+                    } else if (Math.hypot(cx - menuBaseX, cy - sY) < 40) {
+                        isDraggingSlider = true; 
+                    }
+                }
+                
+                if (!isDraggingSlider && canToggleBtn) {
+                    if (Math.hypot(cx - ball.position.x, cy - ball.position.y) < ballRadius + 40) {
+                        grabConstraint = Constraint.create({ pointA: { x: cx, y: cy }, bodyB: ball, stiffness: 0.2, length: 0 });
+                        World.add(world, grabConstraint);
+                    }
+                }
+            }
+            if (grabConstraint) grabConstraint.pointA = { x: cx, y: cy };
+            if (isDraggingSlider) {
+                const newRadius = 20 + (Math.max(0, Math.min(1, ((cx - (menuBaseX - 40)) / 80))) * 60);
+                Body.scale(ball, newRadius/ballRadius, newRadius/ballRadius);
+                ballRadius = newRadius;
+            }
+        } else {
+            if (grabConstraint) {
+                World.remove(world, grabConstraint);
+                grabConstraint = null;
+                const avg = velocityBuffer.reduce((a, b) => ({ x: a.x + b.x, y: a.y + b.y }), { x: 0, y: 0 });
+                Body.setVelocity(ball, { x: (avg.x/5)*0.85, y: (avg.y/5)*0.85 });
+            }
+            isDraggingSlider = false;
+            canToggleBtn = true; 
+        }
+        if (menuActive) drawCompactMenu(canvasCtx);
+      }
+      
+      // Render Ball
+      canvasCtx.beginPath();
+      canvasCtx.arc(ball.position.x, ball.position.y, ballRadius, 0, Math.PI * 2);
+      canvasCtx.fillStyle = ball.render.fillStyle;
+      canvasCtx.fill();
+      canvasCtx.restore();
+      Engine.update(engine);
+    }
+
+    function drawCompactMenu(ctx) {
+        const items = [
+            { label: 'G', y: -menuSpacing, color: '#00ffcc', active: engine.gravity.y === 0 },
+            { label: 'R', y: 0, color: '#ff3e00' },
+            { label: 'S', y: menuSpacing, color: '#fff', slider: true }
+        ];
+        items.forEach(item => {
+            const y = menuBaseY + item.y;
+            ctx.beginPath();
+            if (item.slider) {
+                ctx.moveTo(menuBaseX - 40, y); ctx.lineTo(menuBaseX + 40, y);
+                ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(menuBaseX - 40 + ((ballRadius-20)/60)*80, y, 8, 0, Math.PI*2);
+                ctx.fillStyle = "#fff"; ctx.fill();
+            } else {
+                ctx.arc(menuBaseX, y, 22, 0, Math.PI*2);
+                ctx.fillStyle = item.active ? "rgba(0,255,204,0.4)" : "rgba(0,0,0,0.6)";
+                ctx.strokeStyle = item.color;
+                ctx.fill(); ctx.stroke();
+                ctx.scale(-1, 1);
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 12px Arial";
+                ctx.fillText(item.label, -menuBaseX - 5, y + 5);
+                ctx.scale(-1, 1);
+            }
+        });
+    }
+
+    function handleAction(id) {
+        if (id === 'gravity') {
+            engine.gravity.y = (engine.gravity.y === 0) ? 1.2 : 0;
+            ball.render.fillStyle = (engine.gravity.y === 0) ? '#00ffcc' : '#ff3e00';
+        }
+        if (id === 'reset') {
+            Body.setPosition(ball, { x: window.innerWidth / 2, y: 150 });
+            Body.setVelocity(ball, { x: 0, y: 0 });
+            score = 0;
+            document.getElementById('score-val').innerText = "0";
+        }
+    }
+
+    const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.75, minTrackingConfidence: 0.75 });
+    hands.onResults(onResults);
+    const camera = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 1280, height: 720 });
+    canvasElement.width = window.innerWidth;
+    canvasElement.height = window.innerHeight;
+    setupWorld();
+    camera.start();
+  </script>
+</body>
+</html>
