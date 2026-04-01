@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <title>Mediaspect</title>
+    <title>DIGITAL ID | IYADKH</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
 
@@ -51,6 +51,7 @@
             position: relative;
             transition: all 0.3s;
             border-left: 0px solid var(--neon-cyan);
+            cursor: pointer;
         }
 
         .menu-link:hover {
@@ -82,6 +83,28 @@
 
         .bar { width: 3px; background: var(--neon-cyan); animation: bounce 1s ease-in-out infinite; }
         @keyframes bounce { 0%, 100% { height: 4px; } 50% { height: 12px; } }
+
+        /* Archive Specific Styles */
+        #archive-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1800;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .project-card {
+            background: rgba(0, 242, 255, 0.05);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            transition: all 0.3s;
+        }
+
+        .project-card:hover {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 242, 255, 0.1);
+            transform: translateY(-2px);
+        }
 
         .share-feedback {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
@@ -132,7 +155,7 @@
     <div class="crt-overlay"></div>
     <div id="share-toast" class="share-feedback">Link Encrypted & Copied</div>
 
-    <div id="side-drawer" class="fixed inset-y-0 left-0 w-72 bg-black/95 border-r border-cyan-500/30 z-[1000] backdrop-blur-2xl p-6 flex flex-col">
+    <div id="side-drawer" class="fixed inset-y-0 left-0 w-72 bg-black/95 border-r border-cyan-500/30 z-[1900] backdrop-blur-2xl p-6 flex flex-col">
         <div class="flex justify-between items-center mb-12">
             <div class="text-[10px] font-mono text-cyan-500 uppercase tracking-[0.3em]">System / Nav</div>
             <button onclick="toggleSideMenu()" class="text-white hover:text-red-500 transition-colors">
@@ -141,10 +164,10 @@
         </div>
 
         <nav class="flex flex-col gap-4">
-            <a href="#" class="menu-link p-4 text-white font-bold tracking-widest uppercase text-sm flex items-center gap-4">
+            <a onclick="toggleSideMenu()" class="menu-link p-4 text-white font-bold tracking-widest uppercase text-sm flex items-center gap-4">
                 <i class="fa-solid fa-user-shield text-cyan-500"></i> Identity
             </a>
-            <a href="#" class="menu-link p-4 text-white/60 font-bold tracking-widest uppercase text-sm flex items-center gap-4">
+            <a onclick="toggleArchive()" class="menu-link p-4 text-white/60 font-bold tracking-widest uppercase text-sm flex items-center gap-4">
                 <i class="fa-solid fa-layer-group"></i> Archive
             </a>
             <a href="#" class="menu-link p-4 text-white/60 font-bold tracking-widest uppercase text-sm flex items-center gap-4">
@@ -163,6 +186,39 @@
                 <div class="text-[9px] font-mono">
                     <p class="text-white">NODE: IYAD_01</p>
                     <p class="text-cyan-500">LOC: SEFROU_MAR</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="archive-overlay" class="flex flex-col items-center overflow-y-auto">
+        <div class="w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-10 mt-10 border-b border-cyan-500/30 pb-4">
+                <h2 class="text-3xl font-bold tracking-widest uppercase" style="font-family: 'Orbitron';">Project Archive</h2>
+                <button onclick="toggleArchive()" class="text-cyan-500 hover:text-red-500 text-2xl"><i class="fa-solid fa-circle-xmark"></i></button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="project-card p-6 flex flex-col gap-4">
+                    <div class="flex justify-between items-start">
+                        <i class="fa-solid fa-hand-pointer text-2xl text-cyan-400"></i>
+                        <span class="text-[10px] font-mono text-cyan-600">V2.1 // 2026</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg tracking-wider text-white">HAND PHYSICS PRO</h3>
+                        <p class="text-xs opacity-60 font-mono mt-1">Real-time hand tracking physics simulation using MediaPipe & Matter.js.</p>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <span class="text-[9px] px-2 py-1 bg-cyan-500/10 border border-cyan-500/30">JAVASCRIPT</span>
+                        <span class="text-[9px] px-2 py-1 bg-cyan-500/10 border border-cyan-500/30">PHYSICS</span>
+                    </div>
+                    <a href="physics_game.html" target="_blank" class="hex-btn bg-cyan-500 text-black text-center py-2 font-black text-[10px] tracking-widest uppercase hover:bg-white transition-all">Launch Experiment</a>
+                </div>
+
+                <div class="project-card p-6 flex flex-col gap-4 opacity-40 border-dashed">
+                    <i class="fa-solid fa-lock text-2xl"></i>
+                    <h3 class="font-bold text-lg tracking-wider">DATA ENCRYPTED</h3>
+                    <p class="text-xs font-mono">Upcoming project node currently under development.</p>
                 </div>
             </div>
         </div>
@@ -259,6 +315,7 @@
     <script>
         const initScreen = document.getElementById('home-menu');
         const sideDrawer = document.getElementById('side-drawer');
+        const archiveOverlay = document.getElementById('archive-overlay');
         const bgMusic = document.getElementById('bg-music');
         const audioStatus = document.getElementById('audio-status-text');
         const bars = document.querySelectorAll('.bar');
@@ -267,6 +324,12 @@
 
         function toggleSideMenu() {
             sideDrawer.classList.toggle('open');
+        }
+
+        function toggleArchive() {
+            const isVisible = archiveOverlay.style.display === 'flex';
+            archiveOverlay.style.display = isVisible ? 'none' : 'flex';
+            if (sideDrawer.classList.contains('open')) toggleSideMenu();
         }
 
         function closeInitScreen() {
