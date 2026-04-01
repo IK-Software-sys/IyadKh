@@ -51,7 +51,6 @@
             position: relative;
             transition: all 0.3s;
             border-left: 0px solid var(--neon-cyan);
-            cursor: pointer;
         }
 
         .menu-link:hover {
@@ -83,38 +82,6 @@
 
         .bar { width: 3px; background: var(--neon-cyan); animation: bounce 1s ease-in-out infinite; }
         @keyframes bounce { 0%, 100% { height: 4px; } 50% { height: 12px; } }
-
-        /* Archive & Game Engine Styles */
-        #archive-overlay {
-            display: none;
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 1800;
-            padding: 2rem;
-            backdrop-filter: blur(10px);
-        }
-
-        #game-container {
-            display: none;
-            position: fixed; inset: 0;
-            background: #000;
-            z-index: 2100; /* Above CRT */
-        }
-
-        #game-frame {
-            width: 100%; height: 100%; border: none;
-        }
-
-        .project-card {
-            background: rgba(0, 242, 255, 0.05);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            transition: all 0.3s;
-        }
-
-        .project-card:hover {
-            border-color: var(--neon-cyan);
-            background: rgba(0, 242, 255, 0.1);
-        }
 
         .share-feedback {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
@@ -150,10 +117,11 @@
 
         @keyframes glitch-strobe { 
             0% { opacity: 1; transform: translate(0,0); }
-            20% { opacity: 0.8; }
-            40% { opacity: 1; }
-            60% { opacity: 0.4; }
-            100% { opacity: 0.9; }
+            20% { opacity: 0.8; transform: translate(0px, 0px); }
+            40% { opacity: 1; transform: translate(0px, 0px); }
+            60% { opacity: 0.4; transform: translate(0px, 0px); }
+            80% { opacity: 1; transform: translate(0px, 0px); }
+            100% { opacity: 0.9; transform: translate(0,0); }
         }
 
         @media (max-width: 640px) { h1 { font-size: 2rem !important; } }
@@ -164,14 +132,7 @@
     <div class="crt-overlay"></div>
     <div id="share-toast" class="share-feedback">Link Encrypted & Copied</div>
 
-    <div id="game-container">
-        <button onclick="closeGame()" class="fixed top-4 right-4 z-[2200] bg-red-600 text-white px-4 py-2 font-bold text-xs uppercase tracking-widest clip-path-polygon(10% 0, 100% 0, 90% 100%, 0 100%) shadow-[0_0_15px_rgba(255,0,0,0.5)]">
-            <i class="fa-solid fa-power-off mr-2"></i> Close Connection
-        </button>
-        <iframe id="game-frame" src=""></iframe>
-    </div>
-
-    <div id="side-drawer" class="fixed inset-y-0 left-0 w-72 bg-black/95 border-r border-cyan-500/30 z-[1900] backdrop-blur-2xl p-6 flex flex-col">
+    <div id="side-drawer" class="fixed inset-y-0 left-0 w-72 bg-black/95 border-r border-cyan-500/30 z-[1000] backdrop-blur-2xl p-6 flex flex-col">
         <div class="flex justify-between items-center mb-12">
             <div class="text-[10px] font-mono text-cyan-500 uppercase tracking-[0.3em]">System / Nav</div>
             <button onclick="toggleSideMenu()" class="text-white hover:text-red-500 transition-colors">
@@ -180,17 +141,17 @@
         </div>
 
         <nav class="flex flex-col gap-4">
-            <a onclick="toggleSideMenu()" class="menu-link p-4 text-white font-bold tracking-widest uppercase text-sm flex items-center gap-4">
+            <a href="#" class="menu-link p-4 text-white font-bold tracking-widest uppercase text-sm flex items-center gap-4">
                 <i class="fa-solid fa-user-shield text-cyan-500"></i> Identity
             </a>
-            <a onclick="toggleArchive()" class="menu-link p-4 text-white/60 font-bold tracking-widest uppercase text-sm flex items-center gap-4">
-                <i class="fa-solid fa-layer-group"></i> Archive
+            <a href="archive.html" class="menu-link p-4 text-white/60 font-bold tracking-widest uppercase text-sm flex items-center gap-4">
+                <i class="fa-solid fa-layer-group text-cyan-500"></i> Archive
             </a>
             <a href="#" class="menu-link p-4 text-white/60 font-bold tracking-widest uppercase text-sm flex items-center gap-4">
-                <i class="fa-solid fa-terminal"></i> Terminal
+                <i class="fa-solid fa-terminal text-cyan-500"></i> Terminal
             </a>
             <a href="https://wa.me/212634340071" class="menu-link p-4 text-white/60 font-bold tracking-widest uppercase text-sm flex items-center gap-4">
-                <i class="fa-brands fa-whatsapp"></i> Secure Link
+                <i class="fa-brands fa-whatsapp text-cyan-500"></i> Secure Link
             </a>
         </nav>
 
@@ -202,35 +163,6 @@
                 <div class="text-[9px] font-mono">
                     <p class="text-white">NODE: IYAD_01</p>
                     <p class="text-cyan-500">LOC: SEFROU_MAR</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="archive-overlay" class="flex flex-col items-center overflow-y-auto">
-        <div class="w-full max-w-4xl">
-            <div class="flex justify-between items-center mb-10 mt-10 border-b border-cyan-500/30 pb-4">
-                <h2 class="text-3xl font-bold tracking-widest uppercase" style="font-family: 'Orbitron';">Project Archive</h2>
-                <button onclick="toggleArchive()" class="text-cyan-500 hover:text-red-500 text-2xl"><i class="fa-solid fa-circle-xmark"></i></button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                <div class="project-card p-6 flex flex-col gap-4 border-l-4 border-l-cyan-500">
-                    <div class="flex justify-between items-start">
-                        <i class="fa-solid fa-hand-pointer text-2xl text-cyan-400"></i>
-                        <span class="text-[10px] font-mono text-cyan-600">ONLINE // V2.1</span>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg tracking-wider text-white">HAND PHYSICS PRO</h3>
-                        <p class="text-xs opacity-60 font-mono mt-1">Direct Neural Link established. Access real-time hand tracking simulations.</p>
-                    </div>
-                    <button onclick="launchGame('physics_game.html')" class="hex-btn bg-cyan-500 text-black text-center py-2 font-black text-[10px] tracking-widest uppercase hover:bg-white transition-all">Establish Link</button>
-                </div>
-
-                <div class="project-card p-6 flex flex-col gap-4 opacity-40 grayscale">
-                    <i class="fa-solid fa-lock text-2xl"></i>
-                    <h3 class="font-bold text-lg tracking-wider">LOCKED NODE</h3>
-                    <p class="text-xs font-mono">Archive entry corrupted or restricted.</p>
                 </div>
             </div>
         </div>
@@ -308,6 +240,7 @@
                         <span class="text-white font-bold text-[9px]">IyadDevWorks@gmail.com</span>
                     </div>
                 </div>
+                <div class="h-32 lg:h-0"></div> 
             </div>
         </main>
 
@@ -326,9 +259,6 @@
     <script>
         const initScreen = document.getElementById('home-menu');
         const sideDrawer = document.getElementById('side-drawer');
-        const archiveOverlay = document.getElementById('archive-overlay');
-        const gameContainer = document.getElementById('game-container');
-        const gameFrame = document.getElementById('game-frame');
         const bgMusic = document.getElementById('bg-music');
         const audioStatus = document.getElementById('audio-status-text');
         const bars = document.querySelectorAll('.bar');
@@ -337,24 +267,6 @@
 
         function toggleSideMenu() {
             sideDrawer.classList.toggle('open');
-        }
-
-        function toggleArchive() {
-            const isVisible = archiveOverlay.style.display === 'flex';
-            archiveOverlay.style.display = isVisible ? 'none' : 'flex';
-            if (sideDrawer.classList.contains('open')) toggleSideMenu();
-        }
-
-        function launchGame(url) {
-            gameFrame.src = url;
-            gameContainer.style.display = 'block';
-            bgMusic.pause(); // Pause main site music for game audio
-        }
-
-        function closeGame() {
-            gameContainer.style.display = 'none';
-            gameFrame.src = "";
-            if (!bgMusic.muted) bgMusic.play();
         }
 
         function closeInitScreen() {
